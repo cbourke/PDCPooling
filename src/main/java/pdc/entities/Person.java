@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A class representing a person and their emails.
+ * A class representing a person, their address and emails.
+ * 
  */
 public class Person {
 
@@ -56,9 +57,10 @@ public class Person {
 	public List<String> getEmails() {
 		return new ArrayList<>(emails);
 	}
-	
+
 	public String toString() {
-		return String.format("%s, %s (%s) %s\n\t%s", this.lastName, this.firstName, this.uuid, this.address, this.emails);
+		return String.format("%s, %s (%s) %s\n\t%s", this.lastName, this.firstName, this.uuid, this.address,
+				this.emails);
 	}
 
 }

@@ -4,19 +4,42 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class ConnectionFactory {
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-	private static final String url      = "";
-	private static final String username = "";
-	private static final String password = "";
+/**
+ * Factory class that produces (and closes) connections
+ * one-by-one.  Client code is responsible for invoking
+ * {@link #putConnection(Connection)} to close connections.
+ * 
+ */
+public class ConnectionFactory implements ConnectionProvider {
 
-	public static Connection createConnection() {
+	private static final Logger LOGGER = LogManager.getLogger(ConnectionFactory.class);
+
+	public Connection getConnection() {
 		Connection conn = null;
 		try {
-			conn = DriverManager.getConnection(url, username, password);
+			LOGGER.info("Initializing connection");
+			conn = DriverManager.getConnection(Config.URL, Config.USERNAME, Config.PASSWORD);
 		} catch (SQLException e) {
+			LOGGER.error("Unable to initialize connection", e);
 			throw new RuntimeException(e);
 		}
 		return conn;
 	}
+
+	public void putConnection(Connection conn) {
+		LOGGER.info("Closing connection");
+		try {
+			if (conn != null && !conn.isClosed()) {
+				conn.close();
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public void shutdown() {} 
+
 }
