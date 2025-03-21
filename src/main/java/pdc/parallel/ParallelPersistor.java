@@ -49,10 +49,11 @@ public class ParallelPersistor implements Persistor {
 			threadPool.submit(worker);
 		}
 		try {
-			// shut down...
+			// shutdown...
 			threadPool.shutdown();
 			// and await for at most 1 hour if any workers are active
 			threadPool.awaitTermination(1, TimeUnit.HOURS);
+			this.connectionProvider.shutdown();
 			end = System.currentTimeMillis();
 			double time = (end - start) / 1000.0;
 			System.out.printf("Done: %.2f seconds\n", time);

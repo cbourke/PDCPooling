@@ -28,24 +28,31 @@ public class ConnectionPool implements ConnectionProvider {
 
 	public ConnectionPool(int capacity) {
 		this.numConnections = capacity;
+		this.connections = new ArrayBlockingQueue<>(this.numConnections);
+		this.initialize();
 	}
 
 	/**
-	 * Initializes the connection pool.
+	 * Initializes the connection pool in parallel.
 	 */
 	private void initialize() {
-		LOGGER.info("Initializing " + this.numConnections + " connections...");
-		this.connections = new ArrayBlockingQueue<>(this.numConnections);
+		LOGGER.info("Initializing " + this.numConnections + " connections in parallel...");
 		for (int i = 0; i < this.numConnections; i++) {
-			try {
-				LOGGER.info("Initializing connection number " + (i + 1) + "...");
-				Connection conn = DriverManager.getConnection(Config.URL, Config.USERNAME, Config.PASSWORD);
-				connections.offer(conn);
-			} catch (SQLException e) {
-				throw new RuntimeException(e);
-			}
+			final int iter = i;
+			Thread connectionThread = new Thread() {
+				public void run() {
+					try {
+						LOGGER.info("Initializing connection number " + (iter + 1) + "...");
+						Connection conn = DriverManager.getConnection(Config.URL, Config.USERNAME, Config.PASSWORD);
+						connections.offer(conn);
+						LOGGER.info("Done initializing connection number " + (iter + 1) + "...");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			};
+			connectionThread.start();
 		}
-		LOGGER.info("Done initializing " + this.numConnections + " connections.");
 	}
 
 	/**
@@ -57,10 +64,12 @@ public class ConnectionPool implements ConnectionProvider {
 	 * @return
 	 */
 	public Connection getConnection() {
-		if(this.connections == null) {
-			this.initialize();
+		try {
+			return connections.take();
+		} catch (InterruptedException e) {
+			LOGGER.error("Getting connection failed: ", e);
+			throw new RuntimeException(e);
 		}
-		return connections.poll();
 	}
 
 	/**
@@ -69,7 +78,12 @@ public class ConnectionPool implements ConnectionProvider {
 	 * @param conn
 	 */
 	public void putConnection(Connection conn) {
-		connections.offer(conn);
+		try {
+			connections.put(conn);
+		} catch (InterruptedException e) {
+			LOGGER.error("Getting connection failed: ", e);
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
