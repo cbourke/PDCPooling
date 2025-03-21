@@ -3,8 +3,12 @@ package pdc.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -26,8 +30,8 @@ public class ConnectionPool implements ConnectionProvider {
 		this(DEFAULT_NUM_CONNECTIONS);
 	}
 
-	public ConnectionPool(int capacity) {
-		this.numConnections = capacity;
+	public ConnectionPool(int numConnections) {
+		this.numConnections = numConnections;
 		this.connections = new ArrayBlockingQueue<>(this.numConnections);
 		this.initialize();
 	}
@@ -44,9 +48,9 @@ public class ConnectionPool implements ConnectionProvider {
 					try {
 						LOGGER.info("Initializing connection number " + (iter + 1) + "...");
 						Connection conn = DriverManager.getConnection(Config.URL, Config.USERNAME, Config.PASSWORD);
-						connections.offer(conn);
+						connections.put(conn);
 						LOGGER.info("Done initializing connection number " + (iter + 1) + "...");
-					} catch (SQLException e) {
+					} catch (Exception e) {
 						throw new RuntimeException(e);
 					}
 				}
@@ -87,17 +91,21 @@ public class ConnectionPool implements ConnectionProvider {
 	}
 
 	/**
-	 * Shuts down all connections currently in the pool.
+	 * Shuts down (best effort) all connections currently in the pool.
 	 * 
 	 */
 	public void shutdown() {
 
-		while (!this.connections.isEmpty()) {
-			LOGGER.info("Shutting down connection...");
-			Connection c = connections.poll();
+		List<Connection> drain = new LinkedList<>();
+		this.connections.drainTo(drain);
+		LOGGER.info("Shutting down " + drain.size() + " connection(s)...");
+		while (!drain.isEmpty()) {
 			try {
+				LOGGER.info("Shutting down connection...");
+				Connection c = drain.removeFirst();
 				c.close();
-			} catch (SQLException e) {
+				LOGGER.info("Shut down connection.");
+			} catch (Exception e) {
 				LOGGER.error(e);
 				throw new RuntimeException(e);
 			}

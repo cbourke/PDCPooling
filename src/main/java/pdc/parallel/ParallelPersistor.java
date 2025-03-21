@@ -57,11 +57,9 @@ public class ParallelPersistor implements Persistor {
 			end = System.currentTimeMillis();
 			double time = (end - start) / 1000.0;
 			System.out.printf("Done: %.2f seconds\n", time);
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
+			LOGGER.info("Error encountered shutting down... ", e);
 			throw new RuntimeException(e);
-		} finally {
-			threadPool.shutdown();
-			this.connectionProvider.shutdown();
 		}
 
 	}
