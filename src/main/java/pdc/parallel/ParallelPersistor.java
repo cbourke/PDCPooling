@@ -24,10 +24,10 @@ public class ParallelPersistor implements Persistor {
 	private final int numThreads;
 	private final ConnectionProvider connectionProvider;
 
-	public ParallelPersistor(int numRecords, int numThreads) {
+	public ParallelPersistor(int numRecords, int numberOfConnections, int numThreads) {
 		this.numRecords = numRecords;
 		this.numThreads = numThreads;
-		this.connectionProvider = new ConnectionPool(numThreads);
+		this.connectionProvider = new ConnectionPool(numberOfConnections);
 	}
 
 	@Override

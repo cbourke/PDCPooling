@@ -24,7 +24,9 @@ public class Demo {
 		parser.addArgument("--demoType").choices("serial", "parallel").setDefault("serial")
 				.help("Which type to run, either serial or parallel.");
 		parser.addArgument("--numberOfThreads").type(Integer.class).setDefault(10)
-				.help("Number of threads/workers (parallel only)");
+		.help("Number of threads/workers (parallel only)");
+		parser.addArgument("--numberOfConnections").type(Integer.class).setDefault(5)
+				.help("Number of connections (parallel only)");
 		parser.addArgument("--numberOfRecords").type(Integer.class).setDefault(10)
 				.help("Number of records to insert into the database.");
 
@@ -36,6 +38,7 @@ public class Demo {
 			System.exit(1);
 		}
 
+		int numberOfConnections = ns.getInt("numberOfConnections");
 		int numberOfThreads = ns.getInt("numberOfThreads");
 		int numberOfRecords = ns.getInt("numberOfRecords");
 		String demoType = ns.getString("demoType");
@@ -47,7 +50,7 @@ public class Demo {
 		if (demoType.equals("serial")) {
 			persistor = new SerialPersistor(numberOfRecords);
 		} else if (demoType.equals("parallel")) {
-			persistor = new ParallelPersistor(numberOfRecords, numberOfThreads);
+			persistor = new ParallelPersistor(numberOfRecords, numberOfConnections, numberOfThreads);
 		}
 		persistor.run();
 
